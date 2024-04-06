@@ -1,9 +1,5 @@
 from util import *
-
-# Add your import statements here
-
-
-
+import numpy as np
 
 class Evaluation():
 
@@ -30,12 +26,11 @@ class Evaluation():
 			The precision value as a number between 0 and 1
 		"""
 
-		precision = -1
+		return len(set(query_doc_IDs_ordered[:k]) & set(true_doc_IDs)) / k	
 
-		#Fill in code here
-
-		return precision
-
+	def getTrueDocIDs(self, qrels, query_id):
+		max_position = 4
+		return [doc['id'] for doc in qrels if doc['query_num'] == query_id and doc['position'] <= max_position]
 
 	def meanPrecision(self, doc_IDs_ordered, query_ids, qrels, k):
 		"""
@@ -62,13 +57,13 @@ class Evaluation():
 			The mean precision value as a number between 0 and 1
 		"""
 
-		meanPrecision = -1
+		precision = []
+		for i in range(len(query_ids)):
+			precision.append(self.queryPrecision(doc_IDs_ordered[i], query_ids[i], self.getTrueDocIDs(qrels, query_ids[i]), k))
 
-		#Fill in code here
+		return np.mean(precision)
 
-		return meanPrecision
 
-	
 	def queryRecall(self, query_doc_IDs_ordered, query_id, true_doc_IDs, k):
 		"""
 		Computation of recall of the Information Retrieval System
@@ -92,11 +87,7 @@ class Evaluation():
 			The recall value as a number between 0 and 1
 		"""
 
-		recall = -1
-
-		#Fill in code here
-
-		return recall
+		return len(set(query_doc_IDs_ordered[:k]) & set(true_doc_IDs)) / len(true_doc_IDs)
 
 
 	def meanRecall(self, doc_IDs_ordered, query_ids, qrels, k):
@@ -124,11 +115,11 @@ class Evaluation():
 			The mean recall value as a number between 0 and 1
 		"""
 
-		meanRecall = -1
-
-		#Fill in code here
-
-		return meanRecall
+		recall = []
+		for i in range(len(query_ids)):
+			recall.append(self.queryRecall(doc_IDs_ordered[i], query_ids[i], self.getTrueDocIDs(qrels, query_ids[i]), k))
+		
+		return np.mean(recall)
 
 
 	def queryFscore(self, query_doc_IDs_ordered, query_id, true_doc_IDs, k):
@@ -154,11 +145,10 @@ class Evaluation():
 			The fscore value as a number between 0 and 1
 		"""
 
-		fscore = -1
+		precision = self.queryPrecision(query_doc_IDs_ordered, query_id, true_doc_IDs, k)
+		recall = self.queryRecall(query_doc_IDs_ordered, query_id, true_doc_IDs, k)
 
-		#Fill in code here
-
-		return fscore
+		return 2 * (precision * recall) / (precision + recall)
 
 
 	def meanFscore(self, doc_IDs_ordered, query_ids, qrels, k):
@@ -186,11 +176,11 @@ class Evaluation():
 			The mean fscore value as a number between 0 and 1
 		"""
 
-		meanFscore = -1
-
-		#Fill in code here
-
-		return meanFscore
+		Fscore = []
+		for i in range(len(query_ids)):
+			Fscore.append(self.queryFscore(doc_IDs_ordered[i], query_ids[i], self.getTrueDocIDs(qrels, query_ids[i]), k))
+		
+		return np.mean(Fscore)
 	
 
 	def queryNDCG(self, query_doc_IDs_ordered, query_id, true_doc_IDs, k):
@@ -216,11 +206,10 @@ class Evaluation():
 			The nDCG value as a number between 0 and 1
 		"""
 
-		nDCG = -1
-
-		#Fill in code here
-
-		return nDCG
+		if(len(true_doc_IDs) < k):
+			k = len(true_doc_IDs)
+		
+		return 0
 
 
 	def meanNDCG(self, doc_IDs_ordered, query_ids, qrels, k):
@@ -248,12 +237,11 @@ class Evaluation():
 			The mean nDCG value as a number between 0 and 1
 		"""
 
-		meanNDCG = -1
+		NDCG = []
+		for i in range(len(query_ids)):
+			NDCG.append(self.queryFscore(doc_IDs_ordered[i], query_ids[i], self.getTrueDocIDs(qrels, query_ids[i]), k))
 
-		#Fill in code here
-
-		return meanNDCG
-
+		return np.mean(NDCG)
 
 	def queryAveragePrecision(self, query_doc_IDs_ordered, query_id, true_doc_IDs, k):
 		"""
