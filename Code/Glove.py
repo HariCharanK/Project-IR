@@ -5,6 +5,7 @@ import sys
 
 embeddings_index = {}
 build_embeddings = len(sys.argv) > 1 and sys.argv[1] == 'build-index'
+tokenizer = None
 
 def get_cranfield_docs():
 	with open('cranfield/cran_docs.json') as f:
@@ -44,7 +45,7 @@ def load_Glove_embeddings_pretrained():
 	return embeddings_index
 
 def get_doc_embeddings(docs):
-	global embeddings_index
+	global embeddings_index, tokenizer
 
 	tokenizer = Tokenizer()
 	tokenizer.fit_on_texts(docs)
@@ -59,21 +60,46 @@ def get_doc_embeddings(docs):
 		if doc_embedding:  # doc_embedding shdnt be empty
 			doc_embedding = np.mean(doc_embedding, axis=0)
 			doc_embeddings.append(doc_embedding)
+		else:
+			doc_embeddings.append(np.zeros(50))
 	
 	return doc_embeddings
 
+def get_query_embeddings(queries):
+	global embeddings_index, tokenizer
+
+	sequences = tokenizer.texts_to_sequences(queries)
+	word_index = tokenizer.word_index
+	inverted_word_index = {v: k for k, v in word_index.items()}
+
+	query_embeddings = []
+	for sequence in sequences:
+		query_embedding = [embeddings_index[inverted_word_index[word_id]] for word_id in sequence if inverted_word_index[word_id] in embeddings_index]
+		
+		if query_embedding:  # doc_embedding shdnt be empty
+			query_embedding = np.mean(query_embedding, axis=0)
+			query_embeddings.append(query_embedding)
+		else:
+			query_embeddings.append(np.zeros(50))
+	
+	return query_embeddings
+
 if __name__ == '__main__':
+	load_Glove_embeddings_pretrained()
+
 	docs = get_cranfield_docs()
 	docs = process_docs(docs)
-	print(len(docs))
-
-	load_Glove_embeddings_pretrained()
 
 	if(build_embeddings):
 		doc_embeddings = get_doc_embeddings(docs)
 		np.save('embeddings/doc_embeddings.npy', doc_embeddings)
 
 	queries = get_cranfield_queries()
-	queries = process_queries(queries[:10])
+	queries = process_queries(queries)
+
+	if(build_embeddings):
+		query_embeddings = get_query_embeddings(queries)
+		np.save('embeddings/query_embeddings.npy', query_embeddings)
+
 
 	
