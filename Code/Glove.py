@@ -2,18 +2,20 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 import numpy as np
 import json
 import sys
+import os
 
+dir_path = os.path.dirname(__file__)
 embeddings_index = {}
 build_embeddings = len(sys.argv) > 1 and sys.argv[1] == 'build-index'
 tokenizer = None
 
 def get_cranfield_docs():
-	with open('cranfield/cran_docs.json') as f:
+	with open(os.path.join(dir_path, 'cranfield/cran_docs.json')) as f:
 		cran_docs = json.load(f)
 	return cran_docs
 
 def get_cranfield_queries():
-	with open('cranfield/cran_queries.json') as f:
+	with open(os.path.join(dir_path, 'cranfield/cran_queries.json')) as f:
 		cran_queries = json.load(f)
 	return cran_queries
 
@@ -21,21 +23,21 @@ def process_docs(docs):
 	# from the Json, extract the title and body
 	processed_docs = []
 	for doc in docs:
-		processed_docs.append(doc['title'] + ' ' + doc['body'])
+		processed_docs.append( (doc['title'] + ' ' + doc['body']).lower() )
 
 	return processed_docs
 	
 def process_queries(queries):
 	processed_queries = []
 	for query in queries:
-		processed_queries.append(query['query'])
+		processed_queries.append(query['query'].lower())
 
 	return processed_queries
 
 def load_Glove_embeddings_pretrained():
 	global embeddings_index
 
-	with open('../glove.6B.50d.txt') as f:
+	with open(os.path.join(dir_path, 'models/glove.6B.50d.txt')) as f:
 		for line in f:
 			values = line.split()
 			word = values[0]
@@ -92,14 +94,14 @@ if __name__ == '__main__':
 
 	if(build_embeddings):
 		doc_embeddings = get_doc_embeddings(docs)
-		np.save('embeddings/doc_embeddings.npy', doc_embeddings)
+		np.save(os.path.join(dir_path, 'embeddings/doc_embeddings.npy'), doc_embeddings)
 
 	queries = get_cranfield_queries()
 	queries = process_queries(queries)
 
 	if(build_embeddings):
 		query_embeddings = get_query_embeddings(queries)
-		np.save('embeddings/query_embeddings.npy', query_embeddings)
+		np.save(os.path.join(dir_path, 'embeddings/query_embeddings.npy'), query_embeddings)
 
 
 	
