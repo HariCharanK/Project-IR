@@ -63,7 +63,7 @@ class Evaluation():
 		for i in query_ids:
 			rel[i]=[]
 		for i in qrels:
-			rel[i['query_num']].append(i['id'])
+			rel[int(i['query_num'])].append(int(i['id']))
 
 		meanPrecision = 0
 		for i in range(len(query_ids)):
@@ -137,7 +137,7 @@ class Evaluation():
 		for i in query_ids:
 			rel[i]=[]
 		for i in qrels:
-			rel[i['query_num']].append(i['id'])
+			rel[int(i['query_num'])].append(int(i['id']))
 
 		meanRecall = 0
 		for i in range(len(query_ids)):
@@ -209,7 +209,7 @@ class Evaluation():
 		for i in query_ids:
 			rel[i]=[]
 		for i in qrels:
-			rel[i['query_num']].append(i['id'])
+			rel[int(i['query_num'])].append(int(i['id']))
 		
 		meanFscore = 0
 		for i in range(len(query_ids)):
@@ -374,7 +374,7 @@ class Evaluation():
 		for i in query_ids:
 			rel[i]=[]
 		for i in qrels:
-			rel[i['query_num']].append(i['id'])
+			rel[int(i['query_num'])].append(int(i['id']))
 		
 		meanAveragePrecision = 0
 		for i in range(len(query_ids)):
@@ -384,6 +384,3 @@ class Evaluation():
 
 		return meanAveragePrecision
 	
-
-
- 
