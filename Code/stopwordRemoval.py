@@ -1,51 +1,13 @@
+import math
+
 import nltk
 
+from util import *
+import json
+
+# Add your import statements here
+from nltk.corpus import stopwords
 class StopwordRemoval():
-
-	def BottomUpIDF(self, text):
-		"""
-
-		Parameters
-		----------
-		arg1 : list
-			A list of lists where each sub-list is a sequence of tokens
-			representing a sentence
-
-		Returns
-		-------
-		list
-			A list of lists where each sub-list is a sequence of tokens
-			representing a sentence with stopwords removed using the Bottom-Up IDF approach
-		"""
-
-		# create a list of unique words from the tokenized text
-		uniqueWords = list(set([token for sentence in text for token in sentence]))
-
-		# Keep only the words that contain only alphabets, eliminate the ones which contain digits or special characters 
-		uniqueWords = [word for word in uniqueWords if word.isalpha()]
-
-		# create a dictionary of words and their IDF values
-		idfValues = {}
-		for word in uniqueWords:
-			idfValues[word] = 0
-			for sentence in text:
-				if word in sentence:
-					idfValues[word] += 1
-			idfValues[word] = len(text) / idfValues[word]
-
-		# sort the dictionary by IDF values
-		idfValues = sorted(idfValues.items(), key=lambda x: x[1], reverse=True)
-
-		# create a list of stopwords based on threshold IDF value < 1
-		stopWordsIDF = [word for word in idfValues if word[1] < 1]
-		stopwordRemovedText = [[token for token in sentence if token.lower() not in stopWordsIDF] for sentence in text]
-
-		# write the stop words to a file
-		with open('output/stopwords_BottomUpIDF.txt', 'w') as f:
-			for word in stopWordsIDF:
-				f.write(word + '\n')
-
-		return stopwordRemovedText
 
 	def fromList(self, text):
 		"""
@@ -61,17 +23,43 @@ class StopwordRemoval():
 		-------
 		list
 			A list of lists where each sub-list is a sequence of tokens
-			representing a sentence with stopwords removed 
-			using the list of stopwords from the nltk library
+			representing a sentence with stopwords removed
 		"""
 
-		# remove stopwords from the tokenized text using the stopwords list from nltk library
-		stopwords = nltk.corpus.stopwords.words('english')
-		stopwordRemovedText = [[token for token in sentence if token.lower() not in stopwords] for sentence in text]
+		stopwordRemovedText = []
+		#Fill in code here
+		stop_words = set(stopwords.words('english'))
+		for sentence_tokens in text:
+			filtered_sentence = [token for token in sentence_tokens if token.lower() not in stop_words]
+			stopwordRemovedText.append(filtered_sentence)
+		return stopwordRemovedText
 
-		# write the stop words to a file
-		with open('output/stopwords_NLTK.txt', 'w') as f:
-			for word in stopwords:
-				f.write(word + '\n')
 
+	def stopwords_from_corpus(self, text):
+		docs_json = json.load(open("cranfield/cran_docs.json", 'r'))[:]
+		corpus = [item["body"] for item in docs_json]
+		N = len(corpus)
+		word_count = {}
+		for document in corpus:
+			document_sentences = nltk.sent_tokenize(document)
+			words = set()
+			for sentence in document_sentences:
+				words.update(nltk.word_tokenize(sentence))
+			for word in words:
+				if word in word_count:
+					word_count[word] += 1
+				else:
+					word_count[word] = 1
+		idf_values = {}
+		for word, count in word_count.items():
+			idf_values[word] = math.log(N/count)
+
+		threshold = 0.9 # change the threshold here
+		stopwordsList = [word for word, idf in idf_values.items() if (idf < threshold and (word != '.' and word != ","))]
+		stopwordRemovedText = []
+
+		print(stopwordsList) # prints the stopwords from the corpus
+		for sentence_tokens in text:
+			filtered_sentence = [token for token in sentence_tokens if token.lower() not in stopwordsList]
+			stopwordRemovedText.append(filtered_sentence)
 		return stopwordRemovedText
