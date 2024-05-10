@@ -1,10 +1,6 @@
 import math
-
 import nltk
-
-from util import *
 import json
-
 # Add your import statements here
 from nltk.corpus import stopwords
 class StopwordRemoval():
