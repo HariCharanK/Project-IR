@@ -1,13 +1,10 @@
 import nltk
-print("NLTK Data Path: \n", nltk.data.path)
-
-nltk.download('stopwords')
-print("downloaded stopwords\n\n")
-
+from nltk.stem import PorterStemmer
+from nltk.stem import WordNetLemmatizer
 class InflectionReduction:
 
-	def reduce(self, text):
-		"""
+    def reduce(self, text):
+        """
 		Stemming/Lemmatization
 
 		Parameters
@@ -23,11 +20,16 @@ class InflectionReduction:
 			stemmed/lemmatized tokens representing a sentence
 		"""
 
-		reducedText = []
-
-		# reduce the inflection of the tokenized-text using the Porter Stemmer
-		stemmer = nltk.stem.PorterStemmer()
-		for sentence in text:
-			reducedText.append([stemmer.stem(token.lower()) for token in sentence])
-		
-		return reducedText
+        reducedText1 = []
+        porter = PorterStemmer()
+        for sentence in text:
+            modifiedSentence = [porter.stem(token) for token in sentence]
+            reducedText1.append(modifiedSentence)
+            
+        reducedText2 = []
+        lemmatizer = WordNetLemmatizer()
+        for sentence in text:
+            modifiedSentence = [lemmatizer.lemmatize(token) for token in sentence]
+            reducedText2.append(modifiedSentence)
+            
+        return reducedText2
