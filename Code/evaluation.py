@@ -246,7 +246,7 @@ class Evaluation():
 		IDCG = 0
 
 		for i in range(k):
-			doc_id = true_doc_IDs[i]
+			doc_id = query_doc_IDs_ordered[i]
 			log_value = math.log(i + 2, 2)
 			rel_value = true_doc_IDs.get(doc_id, 0)
 			DCG = DCG + rel_value/log_value
