@@ -10,7 +10,7 @@ class LSA():
         self.svd = None
         self.reduced_matrix = None
 
-    def construct_index(self, documents, document_ids, ngram, concepts):
+    def buildIndex(self, documents, document_ids, ngram, concepts):
         all_docs_combined = []
         for document in documents:
             all_sentences_combined = []

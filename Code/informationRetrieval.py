@@ -1,128 +1,88 @@
-from util import *
-
-# Add your import statements here
-import math
-
-
-
+import sklearn
+from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 class InformationRetrieval():
 
-	def __init__(self):
-		self.index = None
-		self.idf = None
+    def __init__(self):
+        self.doc_ids = None
+        self.vectorizer = None
+        self.svd = None
+        self.reduced_matrix = None
 
-	def eval_idf(self,docsIDs):
-		idf = {}
-		for i in docsIDs:
-			for j in self.index[i]:
-				if j in idf:
-					idf[j] += 1
-				else:
-					idf[j] = 1
+    def buildIndex(self, documents, document_ids, ngram, concepts):
+        """
+        Builds the document index in terms of the document
+        IDs and stores it in the 'index' class variable
 
-		N = len(docsIDs)
-		for i in idf:
-			idf[i] = idf[i]/N
-			idf[i] = math.log(1/idf[i])
+        Parameters
+        ----------
+        arg1 : list
+            A list of lists of lists where each sub-list is
+            a document and each sub-sub-list is a sentence of the document
+        arg2 : list
+            A list of integers denoting IDs of the documents
+        Returns
+        -------
+        None
+        """
 
-		self.idf = self.idf
+        all_docs_combined = []
+        for document in documents:
+            all_sentences_combined = []
+            for sentence in document:
+                all_sentences_combined.extend(sentence)
+            all_docs_combined.append(all_sentences_combined)
+        all_docs_combined = [' '.join(sentence) for sentence in all_docs_combined]
+        tfidf_vectorizer = TfidfVectorizer(ngram_range=(1, 1))
+        term_document_matrix = tfidf_vectorizer.fit_transform(all_docs_combined)
+        svd_model = TruncatedSVD(random_state=42, n_components=concepts)
+        reduced_matrix = svd_model.fit_transform(term_document_matrix)
 
-	def buildIndex(self, docs, docIDs):
-		"""
-		Builds the document index in terms of the document
-		IDs and stores it in the 'index' class variable
+        self.doc_ids = document_ids
+        self.vectorizer = tfidf_vectorizer
+        self.svd = svd_model
+        self.reduced_matrix = reduced_matrix
 
-		Parameters
-		----------
-		arg1 : list
-			A list of lists of lists where each sub-list is
-			a document and each sub-sub-list is a sentence of the document
-		arg2 : list
-			A list of integers denoting IDs of the documents
-		Returns
-		-------
-		None
-		"""
+    def rank(self, queries):
+        """
+        Rank the documents according to relevance for each query
 
-		index = {}
-		for i in range(len(docs)):
-			m ={}
-			for j in docs[i]:
-				for k in j:
-					if k in m:
-						m[k] += 1
-					else:
-						m[k] = 1
-			index[docIDs[i]] = m
-		
-		self.index = index
-		self.eval_idf(docIDs)
+        Parameters
+        ----------
+        arg1 : list
+            A list of lists of lists where each sub-list is a query and
+            each sub-sub-list is a sentence of the query
+        
 
+        Returns
+        -------
+        list
+            A list of lists of integers where the ith sub-list is a list of IDs
+            of documents in their predicted order of relevance to the ith query
+        """
 
-	def cosine_sim(self,temp,doc_vector):
-		dot_product = 0
-		mag_query = 0
-		mag_doc = 0
-		for i in temp:
-			if i in doc_vector:
-				dot_product += temp[i]*doc_vector[i]*self.idf[i]
-			mag_query += temp[i]**2
-		for i in doc_vector:
-			mag_doc += doc_vector[i]**2
-		mag_query = math.sqrt(mag_query)
-		mag_doc = math.sqrt(mag_doc)
-		sim = dot_product/(mag_query*mag_doc)
-		return sim
+        all_queries_combined = []
+        for query in queries:
+            all_sentences_combined = []
+            for sentence in query:
+                all_sentences_combined.extend(sentence)
+            all_queries_combined.append(all_sentences_combined)
+        all_queries_combined = [' '.join(sentence) for sentence in all_queries_combined]
 
+        query_vectorizer = self.vectorizer.transform(all_queries_combined)
+        query_vectors = self.svd.transform(query_vectorizer)
 
-	def rank(self, queries):
-		"""
-		Rank the documents according to relevance for each query
-
-		Parameters
-		----------
-		arg1 : list
-			A list of lists of lists where each sub-list is a query and
-			each sub-sub-list is a sentence of the query
-		
-
-		Returns
-		-------
-		list
-			A list of lists of integers where the ith sub-list is a list of IDs
-			of documents in their predicted order of relevance to the ith query
-		"""
-
-		docIDs = list(self.index.keys())
-		doc_IDs_ordered = []
-
-		for i in range(len(queries)):
-			#building the tf-idf vector for query
-			query = sum(query,[])
-			temp = {}
-			for word in query:
-				if word in temp:
-					temp[word]+=1
-				else:
-					temp[word]=1
-			for i in temp:
-				if i in self.idf:
-					temp[i] = temp[i]*self.idf[i]
-			
-			#computing cosine-sim with each doc
-			m={}
-			for doc in docIDs:
-				doc_vector = self.index[doc]
-				sim = self.cosine_sim(temp,doc_vector)
-				m[doc] = sim
-			
-			#sorting the docs based on cosine-sim
-			m = dict(sorted(m.items(), key=lambda item: item[1],reverse=True))
-			doc_IDs_ordered.append(list(m.keys()))
-
-	
-		return doc_IDs_ordered
-
-
-
-
+        similarity_values = cosine_similarity(query_vectors, self.reduced_matrix)
+        ranked_doc_ids = []
+        for value in similarity_values:
+            scores = []
+            total_docs = len(self.doc_ids)
+            for i in range(total_docs):
+                scores.append((self.doc_ids[i], value[i]))
+            sorted_scores = sorted(scores, key=lambda x: x[1], reverse=True)
+            ordered_docs_query = []
+            for i in sorted_scores:
+                ordered_docs_query.append(i[0])
+            ranked_doc_ids.append(ordered_docs_query)
+        return ranked_doc_ids

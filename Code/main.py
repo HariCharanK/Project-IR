@@ -4,7 +4,7 @@ from inflectionReduction import InflectionReduction
 from stopwordRemoval import StopwordRemoval
 from informationRetrieval import InformationRetrieval
 from evaluation import Evaluation
-
+from LSA import LSA
 from sys import version_info
 import argparse
 import json
@@ -31,9 +31,20 @@ class SearchEngine:
 		self.sentenceSegmenter = SentenceSegmentation()
 		self.inflectionReducer = InflectionReduction()
 		self.stopwordRemover = StopwordRemoval()
-
 		self.informationRetriever = InformationRetrieval()
 		self.evaluator = Evaluation()
+		self.ngram = None
+		self.concepts = int(self.args.concepts)
+
+		ngram = self.args.ngram
+		if ngram == "unigram":
+			ngram = 1
+		elif ngram == "bigram":
+			ngram = 2
+
+		self.ngram = ngram
+		if self.args.method == "lsa":
+			self.informationRetriever = LSA()
 
 
 	def segmentSentences(self, text):
@@ -153,12 +164,12 @@ class SearchEngine:
 		# Read documents
 		docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
 		doc_ids, docs = [item["id"] for item in docs_json], \
-								[item["body"] for item in docs_json]
+          [(item["body"] + (" " + item["title"])) for item in docs_json]
 		# Process documents
 		processedDocs = self.preprocessDocs(docs)
 
 		# Build document index
-		self.informationRetriever.buildIndex(processedDocs, doc_ids)
+		self.informationRetriever.buildIndex(processedDocs, doc_ids, self.ngram, self.concepts)
 		# Rank the documents for each query
 		doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
 
@@ -199,6 +210,7 @@ class SearchEngine:
 		plt.title("Evaluation Metrics - Cranfield Dataset")
 		plt.xlabel("k")
 		plt.savefig(args.out_folder + "eval_plot.png")
+		plt.show()
 
 		
 	def handleCustomQuery(self):
@@ -247,6 +259,15 @@ if __name__ == "__main__":
 	                    help = "Tokenizer Type [naive|ptb]")
 	parser.add_argument('-custom', action = "store_true", 
 						help = "Take custom query as input")
+	parser.add_argument('-method',
+                      default="lsa",
+                      help="lsa")
+	parser.add_argument('-ngram',
+                      default="unigram",
+                      help="unigram|bigram")
+	parser.add_argument('-concepts',
+                      default= "250",
+                      help="concepts used by lsa")
 	
 	# Parse the input arguments
 	args = parser.parse_args()
