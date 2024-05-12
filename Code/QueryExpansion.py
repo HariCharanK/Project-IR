@@ -1,49 +1,64 @@
-from nltk.corpus import wordnet
-class QueryExpansion():
-    def append_synonyms(self, token, expanded_sentence):
-        expanded_sentence.append(token)
+from  nltk.corpus import wordnet
+import sys
 
-        synsets = wordnet.synsets(token)
-        if len(synsets) > 0:
-            new_token = synsets[0].name().split('.')[0]
-            if new_token != token:
-                expanded_sentence.append(new_token)
+test = len(sys.argv) > 1 and sys.argv[1] == 'test'
 
-        return expanded_sentence
+def append_synonyms(token, expanded_sentence):
+    expanded_sentence.append(token)
 
-    def expansion(self, queries):
-        expanded_queries = []
+    synsets = wordnet.synsets(token)
+    if len(synsets) > 0:
+        new_token = synsets[0].name().split('.')[0]
+        if new_token != token:
+            expanded_sentence.append(new_token)
 
-        for query in queries:
-            expanded_query = []
+    return expanded_sentence
 
-            for sentence in query:
-                expanded_sentence = []
+def QueryExpansion(queries):
+    expanded_queries = []
 
-                for token in sentence:
-                    token = token.lower()
+    for query in queries:
+        expanded_query = []
 
-                    if token.isalpha() == True:
-                        expanded_sentence = self.append_synonyms(token, expanded_sentence)
+        for sentence in query:
+            expanded_sentence = []
 
-                    else:
-                        if '-' in token:
-                            expanded_sentence.append(token)
+            for token in sentence:
+                token = token.lower()
 
-                            synsets = wordnet.synsets(token)
-                            if len(synsets) > 0:
-                                new_token = synsets[0].name().split('.')[0]
-                                if new_token != token:
-                                    expanded_sentence.append(new_token)
-                        
-                            else:
-                                tokens = token.split('-')
-                                for w in tokens:
-                                    expanded_sentence = self.append_synonyms(w, expanded_sentence)
-            
-                expanded_query.append(expanded_sentence)
+                if token.isalpha() == True:
+                    expanded_sentence = append_synonyms(token, expanded_sentence)
 
-            expanded_queries.append(expanded_query)
+                else:
+                    if '-' in token:
+                        expanded_sentence.append(token)
 
-        return expanded_queries
-    
+                        synsets = wordnet.synsets(token)
+                        if len(synsets) > 0:
+                            new_token = synsets[0].name().split('.')[0]
+                            if new_token != token:
+                                expanded_sentence.append(new_token)
+                       
+                        else:
+                            tokens = token.split('-')
+                            for w in tokens:
+                                expanded_sentence = append_synonyms(w, expanded_sentence)
+        
+            expanded_query.append(expanded_sentence)
+
+        expanded_queries.append(expanded_query)
+
+    return expanded_queries
+
+if(test):
+    print("Running test cases")
+
+    queries = [
+        [['which', 'aeroplane', 'is', 'the', 'fastest']],
+        [['which', 'aeroplane', 'is', 'the', 'largest']],
+        [['what', 'similarity', 'laws', 'must', 'be', 'obeyed', 'when', 'constructing', 'aeroelastic', 'model', 'of', 'a', 'heated', 'high', 'speed', 'aircraft']]
+    ]
+
+    expanded_queries = QueryExpansion(queries)
+    for query in expanded_queries:
+        print(query)
