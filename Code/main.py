@@ -3,6 +3,7 @@ from tokenization import Tokenization
 from inflectionReduction import InflectionReduction
 from stopwordRemoval import StopwordRemoval
 from informationRetrieval import InformationRetrieval
+from QueryExpansion import QueryExpansion
 from evaluation import Evaluation
 from LSA import LSA
 from sys import version_info
@@ -77,6 +78,13 @@ class SearchEngine:
 		"""
 		return self.stopwordRemover.fromList(text)
 
+	def expandQueries(self, queries):
+		"""
+		Call the required query expansion method
+		"""
+		if self.args.query_expansion == "True":
+			queries = QueryExpansion(queries)
+		return queries
 
 	def preprocessQueries(self, queries):
 		"""
@@ -160,6 +168,9 @@ class SearchEngine:
 								[item["query"] for item in queries_json]
 		# Process queries 
 		processedQueries = self.preprocessQueries(queries)
+
+		# Expand queries
+		processedQueries = self.expandQueries(processedQueries)
 
 		# Read documents
 		docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
@@ -268,6 +279,9 @@ if __name__ == "__main__":
 	parser.add_argument('-concepts',
                       default= "250",
                       help="concepts used by lsa")
+	parser.add_argument('-query_expansion',
+					  default= "True",
+					  help="Perform Query Expansion")
 	
 	# Parse the input arguments
 	args = parser.parse_args()
