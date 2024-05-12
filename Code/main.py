@@ -3,10 +3,10 @@ from tokenization import Tokenization
 from inflectionReduction import InflectionReduction
 from stopwordRemoval import StopwordRemoval
 from informationRetrieval import InformationRetrieval
+from QueryExpansion import QueryExpansion
 from evaluation import Evaluation
 from LSA import LSA
 from sys import version_info
-from queryExpansion import QueryExpansion
 import argparse
 import json
 import matplotlib.pyplot as plt
@@ -21,6 +21,7 @@ elif version_info.major == 2:
         pass
 else:
     print ("Unknown python version - input function not safe")
+
 
 class SearchEngine:
 
@@ -41,13 +42,11 @@ class SearchEngine:
 			ngram = 1
 		elif ngram == "bigram":
 			ngram = 2
-		elif ngram == "hybrid":
-			ngram = 1.5
 
 		self.ngram = ngram
 		if self.args.method == "lsa":
 			self.informationRetriever = LSA()
-		self.queryExpansion = QueryExpansion()
+
 
 	def segmentSentences(self, text):
 		"""
@@ -79,6 +78,13 @@ class SearchEngine:
 		"""
 		return self.stopwordRemover.fromList(text)
 
+	def expandQueries(self, queries):
+		"""
+		Call the required query expansion method
+		"""
+		if self.args.query_expansion == "True":
+			queries = QueryExpansion(queries)
+		return queries
 
 	def preprocessQueries(self, queries):
 		"""
@@ -112,13 +118,7 @@ class SearchEngine:
 
 		preprocessedQueries = stopwordRemovedQueries
 		return preprocessedQueries
-	
-	def expandQueries(self, preprocessedQueries):
-		if self.args.qexpand == 'yes':
-			return self.queryExpansion.expansion(preprocessedQueries)
-		else:
-			return preprocessedQueries
-		
+
 	def preprocessDocs(self, docs):
 		"""
 		Preprocess the documents
@@ -169,23 +169,18 @@ class SearchEngine:
 		# Process queries 
 		processedQueries = self.preprocessQueries(queries)
 
-		# Query Expansion
+		# Expand queries
 		processedQueries = self.expandQueries(processedQueries)
 
 		# Read documents
 		docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
 		doc_ids, docs = [item["id"] for item in docs_json], \
-								[item["body"] for item in docs_json]
-		# doc_ids, docs = [item["id"] for item in docs_json], \
-        #   [(item["body"] + (" " + item["title"])) for item in docs_json]
+          [(item["body"] + (" " + item["title"])) for item in docs_json]
 		# Process documents
 		processedDocs = self.preprocessDocs(docs)
 
 		# Build document index
-		if self.args.method == "lsa":
-			self.informationRetriever.buildIndex(processedDocs, doc_ids, self.ngram, self.concepts)
-		else:
-			self.informationRetriever.buildIndex(processedDocs, doc_ids)
+		self.informationRetriever.buildIndex(processedDocs, doc_ids, self.ngram, self.concepts)
 		# Rank the documents for each query
 		doc_IDs_ordered = self.informationRetriever.rank(processedQueries)
 
@@ -239,8 +234,6 @@ class SearchEngine:
 		query = input()
 		# Process documents
 		processedQuery = self.preprocessQueries([query])[0]
-		# Expand Query
-		processedQuery = self.expandQueries([processedQuery])[0]
 
 		# Read documents
 		docs_json = json.load(open(args.dataset + "cran_docs.json", 'r'))[:]
@@ -279,14 +272,16 @@ if __name__ == "__main__":
 						help = "Take custom query as input")
 	parser.add_argument('-method',
                       default="lsa",
-                      help="lsa|ir")
+                      help="lsa")
 	parser.add_argument('-ngram',
-                      default="hybrid",
-                      help="unigram|bigram|hybrid")
+                      default="unigram",
+                      help="unigram|bigram")
 	parser.add_argument('-concepts',
                       default= "250",
                       help="concepts used by lsa")
-	parser.add_argument('-qexpand', default="yes", help="yes|no")
+	parser.add_argument('-query_expansion',
+					  default= "True",
+					  help="Perform Query Expansion")
 	
 	# Parse the input arguments
 	args = parser.parse_args()
